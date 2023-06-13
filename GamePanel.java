@@ -43,13 +43,12 @@ public class GamePanel extends JPanel implements ActionListener, MouseListener {
 
     static final int READY_BUTTON_WIDTH = 100;
     static final int READY_BUTTON_HEIGHT = 30;
-    // 計算按鈕的位置以便它在分數框下方並水平置中
     static final int READY_BUTTON_X = SCORE_AREA_X + (SCORE_AREA_WIDTH - READY_BUTTON_WIDTH) / 2;
-    static final int READY_BUTTON_Y = SCORE_AREA_Y + SCORE_AREA_HEIGHT + 10; // 10 為分數框與按鈕之間的間距
+    static final int READY_BUTTON_Y = SCORE_AREA_Y + SCORE_AREA_HEIGHT - 10;
 
     static final int DELAY = 55;
 
-    private boolean paused = false; // 新增暂停标志变量
+    private boolean paused = false;
 
     final int x[] = new int[GAME_UNITS];
     final int y[] = new int[GAME_UNITS];
@@ -91,20 +90,20 @@ public class GamePanel extends JPanel implements ActionListener, MouseListener {
                 while ((messageFromServer = in.readLine()) != null) {
                     System.out.println(messageFromServer);
                     if ("START_GAME".equals(messageFromServer)) {
-                        // 服务器发来了开始游戏的消息
+                        // Server傳來開始遊戲的訊息
                         started = true;
                         startGame();
-                        continue; // 跳过后续处理，继续监听
+                        continue; // 跳過後續處理繼續監聽
                     }
 
-                    // 其他消息处理逻辑保持不变
+                    // 其他訊息邏輯處理保持不變
                     String[] parts = messageFromServer.split(":");
                     if (parts.length == 3) {
                         String playerName = parts[0];
-                        String status = parts[1].split("\\(")[0]; // 从状态中去除括号部分
+                        String status = parts[1].split("\\(")[0]; // 從狀態中去除括號
                         String score = parts[2];
-                        otherPlayersStatus.put(playerName, "(" + status + "): " + score); // 调整格式并放入 map 中
-                        repaint(); // 重新绘制游戏面板以更新其他玩家信息
+                        otherPlayersStatus.put(playerName, "(" + status + "): " + score); // 調整格式並放入 map 中
+                        repaint(); // 重新繪製遊戲面板以更新其他玩家訊息
                     }
                 }
             } catch (IOException e) {
@@ -420,7 +419,7 @@ public class GamePanel extends JPanel implements ActionListener, MouseListener {
      * 恢復遊戲
      */
     public void resume() {
-        paused = false; // 清除暂停标志
+        paused = false; // 清除暫停標誌
         GamePanel.gameOn = false;
         scheduledExecutorService = Executors.newScheduledThreadPool(1);
         scheduledExecutorService.scheduleAtFixedRate(() -> {
