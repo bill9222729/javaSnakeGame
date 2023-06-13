@@ -9,7 +9,20 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.swing.DefaultListModel;
+import javax.swing.JFrame;
+import javax.swing.JList;
+import javax.swing.JScrollPane;
+import java.awt.BorderLayout;
+
 public class Server {
+
+    // 添加一个JFrame变量
+    private static JFrame frame;
+    // 添加一个JList变量
+    private static JList<String> playerList;
+    // 添加一个DefaultListModel来管理JList中的内容
+    private static DefaultListModel<String> listModel;
 
     public static void main(String[] args) {
 
@@ -19,6 +32,9 @@ public class Server {
         List<PrintWriter> clientOutputStreams = new ArrayList<>();
         // This will store the latest status of all players
         Map<String, PlayerStatus> playersStatus = new HashMap<>();
+
+        // 调用创建GUI的方法
+        createGUI();
 
         try (ServerSocket serverSocket = new ServerSocket(PORT)) {
             System.out.println("Server is listening on port " + PORT);
@@ -63,6 +79,9 @@ public class Server {
                                 playersStatus.put(playerName, playerStatus);
                             }
 
+                            // 更新GUI列表
+                            updatePlayerList(playersStatus);
+
                             // Broadcast the updated player status to all clients
                             synchronized (clientOutputStreams) {
                                 for (PrintWriter writerTmp : clientOutputStreams) {
@@ -90,7 +109,32 @@ public class Server {
         }
     }
 
-    
+    private static void updatePlayerList(Map<String, PlayerStatus> playersStatus) {
+        // 清空列表
+        listModel.clear();
+
+        // 添加新的玩家状态到列表
+        for (PlayerStatus status : playersStatus.values()) {
+            listModel.addElement(status.toString());
+        }
+    }
+
+    private static void createGUI() {
+        // 创建一个新的JFrame
+        frame = new JFrame("Server");
+        frame.setSize(300, 400);
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
+        // 创建一个新的DefaultListModel
+        listModel = new DefaultListModel<>();
+
+        // 创建一个新的JList并将其添加到JFrame
+        playerList = new JList<>(listModel);
+        frame.add(new JScrollPane(playerList), BorderLayout.CENTER);
+
+        // 显示JFrame
+        frame.setVisible(true);
+    }
 
     private static class PlayerStatus {
         private String playerName;

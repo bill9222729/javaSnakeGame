@@ -72,6 +72,7 @@ public class GamePanel extends JPanel implements ActionListener, MouseListener {
 			try (BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
 				String messageFromServer;
 				while ((messageFromServer = in.readLine()) != null) {
+					System.out.println(messageFromServer);
 					String[] parts = messageFromServer.split(":");
 					if (parts.length == 3) {
 						String playerName = parts[0];
