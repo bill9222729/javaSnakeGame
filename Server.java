@@ -21,11 +21,11 @@ import java.awt.event.ActionEvent;
 
 public class Server {
 
-    // 添加一个JFrame变量
+    // 新增一個JFrame變數
     private static JFrame frame;
-    // 添加一个JList变量
+    // 新增一個JList變數
     private static JList<String> playerList;
-    // 添加一个DefaultListModel来管理JList中的内容
+    // 新增一個DefaultListModel來管理JList中的內容
     private static DefaultListModel<String> listModel;
     private static List<PrintWriter> clientOutputStreams = new ArrayList<>();
 
@@ -33,26 +33,26 @@ public class Server {
 
         final int PORT = 12345;
 
-        // This will store the latest status of all players
+        // 儲存所有玩家的最新狀態
         Map<String, PlayerStatus> playersStatus = new HashMap<>();
 
-        // 调用创建GUI的方法
+        // 呼叫建立GUI的方法
         createGUI();
 
         try (ServerSocket serverSocket = new ServerSocket(PORT)) {
-            System.out.println("Server is listening on port " + PORT);
+            System.out.println("伺服器正在監聽連接埠 " + PORT);
 
             while (true) {
                 Socket socket = serverSocket.accept();
-                System.out.println("New client connected");
+                System.out.println("新的客戶端已連接");
 
-                // Add client output stream to list
+                // 將客戶端的輸出流加入列表
                 PrintWriter writer = new PrintWriter(socket.getOutputStream(), true);
                 synchronized (clientOutputStreams) {
                     clientOutputStreams.add(writer);
                 }
 
-                // Send the latest player status to the new client
+                // 將最新的玩家狀態發送給新的客戶端
                 synchronized (playersStatus) {
                     for (PlayerStatus playerStatus : playersStatus.values()) {
                         writer.println(playerStatus);
@@ -63,29 +63,29 @@ public class Server {
                     try (BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
                         String inputLine;
                         while ((inputLine = in.readLine()) != null) {
-                            System.out.println("Received from client: " + inputLine);
+                            System.out.println("從客戶端接收到訊息: " + inputLine);
 
-                            // Parsing the input line
+                            // 解析接收到的訊息
                             String[] parts = inputLine.split(", ");
                             String playerName = parts[0].split(": ")[1];
                             int applesEaten = Integer.parseInt(parts[1].split(": ")[1]);
                             boolean started = Boolean.parseBoolean(parts[2].split(": ")[1]);
 
-                            // Set the status based on the 'started' field
-                            String status = started ? "alive" : "dead";
+                            // 根據 'started' 欄位設定狀態
+                            String status = started ? "存活" : "死亡";
 
-                            // Create the player status object
+                            // 建立玩家狀態對象
                             PlayerStatus playerStatus = new PlayerStatus(playerName, status, applesEaten);
 
-                            // Update the player status in the map
+                            // 更新玩家狀態對應
                             synchronized (playersStatus) {
                                 playersStatus.put(playerName, playerStatus);
                             }
 
-                            // 更新GUI列表
+                            // 更新玩家列表
                             updatePlayerList(playersStatus);
 
-                            // Broadcast the updated player status to all clients
+                            // 將更新後的玩家狀態廣播給所有客戶端
                             synchronized (clientOutputStreams) {
                                 for (PrintWriter writerTmp : clientOutputStreams) {
                                     writerTmp.println(playerStatus);
@@ -116,42 +116,42 @@ public class Server {
         // 清空列表
         listModel.clear();
 
-        // 添加新的玩家状态到列表
+        // 新增新的玩家狀態到列表
         for (PlayerStatus status : playersStatus.values()) {
             listModel.addElement(status.toString());
         }
     }
 
     private static void createGUI() {
-        // 创建一个新的JFrame
-        frame = new JFrame("Server");
+        // 建立一個新的JFrame
+        frame = new JFrame("伺服器");
         frame.setSize(300, 500);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
-        // 设置布局
+        // 設定佈局
         frame.setLayout(new BorderLayout());
 
-        // 创建一个新的DefaultListModel
+        // 建立一個新的DefaultListModel
         listModel = new DefaultListModel<>();
 
-        // 创建一个新的JList并将其添加到JFrame
+        // 建立一個新的JList並將其新增到JFrame
         playerList = new JList<>(listModel);
         frame.add(new JScrollPane(playerList), BorderLayout.CENTER);
 
-        // 创建一个新的按钮并设置其标签为 "开始游戏"
-        JButton startGameButton = new JButton("开始游戏");
+        // 建立一個新的按鈕並設定其標籤為 "開始遊戲"
+        JButton startGameButton = new JButton("開始遊戲");
         startGameButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                // 在这里向所有已连接的客户端发送开始游戏的信号
+                // 在這裡向所有已連接的客戶端傳送開始遊戲的訊號
                 broadcastMessage("START_GAME");
             }
         });
 
-        // 将按钮添加到JFrame的底部
+        // 將按鈕新增到JFrame的底部
         frame.add(startGameButton, BorderLayout.SOUTH);
 
-        // 显示JFrame
+        // 顯示JFrame
         frame.setVisible(true);
     }
 
