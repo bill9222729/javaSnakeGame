@@ -15,6 +15,10 @@ import javax.swing.JList;
 import javax.swing.JScrollPane;
 import java.awt.BorderLayout;
 
+import javax.swing.JButton;
+import java.awt.event.ActionListener;
+import java.awt.event.ActionEvent;
+
 public class Server {
 
     // 添加一个JFrame变量
@@ -23,13 +27,12 @@ public class Server {
     private static JList<String> playerList;
     // 添加一个DefaultListModel来管理JList中的内容
     private static DefaultListModel<String> listModel;
+    private static List<PrintWriter> clientOutputStreams = new ArrayList<>();
 
     public static void main(String[] args) {
 
         final int PORT = 12345;
 
-        // This will store output streams of all connected clients
-        List<PrintWriter> clientOutputStreams = new ArrayList<>();
         // This will store the latest status of all players
         Map<String, PlayerStatus> playersStatus = new HashMap<>();
 
@@ -122,8 +125,11 @@ public class Server {
     private static void createGUI() {
         // 创建一个新的JFrame
         frame = new JFrame("Server");
-        frame.setSize(300, 400);
+        frame.setSize(300, 500);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
+        // 设置布局
+        frame.setLayout(new BorderLayout());
 
         // 创建一个新的DefaultListModel
         listModel = new DefaultListModel<>();
@@ -132,8 +138,29 @@ public class Server {
         playerList = new JList<>(listModel);
         frame.add(new JScrollPane(playerList), BorderLayout.CENTER);
 
+        // 创建一个新的按钮并设置其标签为 "开始游戏"
+        JButton startGameButton = new JButton("开始游戏");
+        startGameButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                // 在这里向所有已连接的客户端发送开始游戏的信号
+                broadcastMessage("START_GAME");
+            }
+        });
+
+        // 将按钮添加到JFrame的底部
+        frame.add(startGameButton, BorderLayout.SOUTH);
+
         // 显示JFrame
         frame.setVisible(true);
+    }
+
+    private static void broadcastMessage(String message) {
+        synchronized (clientOutputStreams) {
+            for (PrintWriter writer : clientOutputStreams) {
+                writer.println(message);
+            }
+        }
     }
 
     private static class PlayerStatus {

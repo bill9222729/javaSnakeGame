@@ -35,6 +35,16 @@ public class GamePanel extends JPanel implements ActionListener, MouseListener {
 	static final int GAME_AREA_SIZE = 750 - (2 * EDGE_MARGIN);
 	static final int UNIT_SIZE = 25;
 	static final int GAME_UNITS = (SCREEN_WIDTH * SCREEN_HEIGHT) / UNIT_SIZE;
+	static final int SCORE_AREA_X = GAME_AREA_SIZE + 2 * EDGE_MARGIN;
+	static final int SCORE_AREA_Y = EDGE_MARGIN;
+	static final int SCORE_AREA_WIDTH = 350;
+	static final int SCORE_AREA_HEIGHT = 710;
+
+	static final int READY_BUTTON_WIDTH = 100;
+	static final int READY_BUTTON_HEIGHT = 30;
+	// 計算按鈕的位置以便它在分數框下方並水平置中
+	static final int READY_BUTTON_X = SCORE_AREA_X + (SCORE_AREA_WIDTH - READY_BUTTON_WIDTH) / 2;
+	static final int READY_BUTTON_Y = SCORE_AREA_Y + SCORE_AREA_HEIGHT + 10; // 10 為分數框與按鈕之間的間距
 
 	static final int DELAY = 55;
 
@@ -73,6 +83,14 @@ public class GamePanel extends JPanel implements ActionListener, MouseListener {
 				String messageFromServer;
 				while ((messageFromServer = in.readLine()) != null) {
 					System.out.println(messageFromServer);
+					if ("START_GAME".equals(messageFromServer)) {
+						// 服务器发来了开始游戏的消息
+						started = true;
+						startGame();
+						continue; // 跳过后续处理，继续监听
+					}
+
+					// 其他消息处理逻辑保持不变
 					String[] parts = messageFromServer.split(":");
 					if (parts.length == 3) {
 						String playerName = parts[0];
@@ -257,6 +275,18 @@ public class GamePanel extends JPanel implements ActionListener, MouseListener {
 	public void paintComponent(Graphics g) {
 		super.paintComponent(g);
 		draw(g);
+		drawReadyButton(g); // Draw the "Ready" button in the bottom-right corner
+	}
+
+	private void drawReadyButton(Graphics g) {
+		g.setColor(Color.GREEN);
+		g.fillRect(READY_BUTTON_X, READY_BUTTON_Y, READY_BUTTON_WIDTH, READY_BUTTON_HEIGHT);
+		g.setColor(Color.BLACK);
+		g.setFont(new Font("SAN_SERIF", Font.BOLD, 20));
+		FontMetrics metrics = getFontMetrics(g.getFont());
+		String buttonText = "準備完成";
+		g.drawString(buttonText, READY_BUTTON_X + (READY_BUTTON_WIDTH - metrics.stringWidth(buttonText)) / 2,
+				READY_BUTTON_Y + ((READY_BUTTON_HEIGHT - metrics.getHeight()) / 2) + metrics.getAscent());
 	}
 
 	public void draw(Graphics g) {
@@ -264,12 +294,8 @@ public class GamePanel extends JPanel implements ActionListener, MouseListener {
 		int centerX = EDGE_MARGIN + (GAME_AREA_SIZE / 2);
 		int centerY = EDGE_MARGIN + (GAME_AREA_SIZE / 2);
 
-		int scoreAreaX = GAME_AREA_SIZE + 2 * EDGE_MARGIN;
-		int scoreAreaY = EDGE_MARGIN;
-		int scoreAreaWidth = 350;
-		int scoreAreaHeight = 710;
 		g.setColor(Color.WHITE);
-		g.drawRect(scoreAreaX, scoreAreaY, scoreAreaWidth, scoreAreaHeight);
+		g.drawRect(SCORE_AREA_X, SCORE_AREA_Y, SCORE_AREA_WIDTH, SCORE_AREA_HEIGHT);
 
 		g.setColor(Color.RED);
 		g.drawRect(EDGE_MARGIN, EDGE_MARGIN, GAME_AREA_SIZE, GAME_AREA_SIZE);
@@ -313,8 +339,8 @@ public class GamePanel extends JPanel implements ActionListener, MouseListener {
 		g.setColor(Color.CYAN);
 		g.setFont(new Font("Ink Free", Font.BOLD, 30));
 		FontMetrics metrics = getFontMetrics(g.getFont());
-		int scoreTextX = scoreAreaX + (scoreAreaWidth - metrics.stringWidth(playerName + " 的分數: " + applesEaten)) / 2;
-		int scoreTextY = scoreAreaY + metrics.getHeight() + EDGE_MARGIN;
+		int scoreTextX = SCORE_AREA_X + (SCORE_AREA_WIDTH - metrics.stringWidth(playerName + " 的分數: " + applesEaten)) / 2;
+		int scoreTextY = SCORE_AREA_Y + metrics.getHeight() + EDGE_MARGIN;
 		g.drawString(playerName + " 的分數: " + applesEaten, scoreTextX, scoreTextY);
 		// 連線玩家分數
 		g.setColor(Color.WHITE);
@@ -364,10 +390,22 @@ public class GamePanel extends JPanel implements ActionListener, MouseListener {
 		}, 0, DELAY, TimeUnit.MILLISECONDS);
 	}
 
+	private void prepareComplete() {
+		// Change status to "Ready" and send to the server
+		System.out.println("???");
+		if (out != null) {
+			out.println("READY");
+		}
+	}
+
 	@Override
 	public void mouseClicked(MouseEvent e) {
-		started = true;
-		startGame();
+		int mouseX = e.getX();
+		int mouseY = e.getY();
+
+		if (mouseX >= READY_BUTTON_X && mouseX <= READY_BUTTON_X + READY_BUTTON_WIDTH && mouseY >= READY_BUTTON_Y && mouseY <= READY_BUTTON_Y + READY_BUTTON_HEIGHT) {
+			prepareComplete(); // If the click is on the "Ready" button
+		}
 	}
 
 	@Override
