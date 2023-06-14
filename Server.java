@@ -12,6 +12,7 @@ import java.util.Map;
 import javax.swing.DefaultListModel;
 import javax.swing.JFrame;
 import javax.swing.JList;
+import javax.swing.JOptionPane;
 import javax.swing.JScrollPane;
 import java.awt.BorderLayout;
 
@@ -33,11 +34,14 @@ public class Server {
 
         final int PORT = 12345;
 
+        // 啟動Serveo並公開連接埠
+        startServeo(PORT);
+
         // 儲存所有玩家的最新狀態
         Map<String, PlayerStatus> playersStatus = new HashMap<>();
 
         // 呼叫建立GUI的方法
-        createGUI();
+        createGUI(playersStatus);
 
         try (ServerSocket serverSocket = new ServerSocket(PORT)) {
             System.out.println("伺服器正在監聽連接埠 " + PORT);
@@ -69,10 +73,7 @@ public class Server {
                             String[] parts = inputLine.split(", ");
                             String playerName = parts[0].split(": ")[1];
                             int applesEaten = Integer.parseInt(parts[1].split(": ")[1]);
-                            boolean started = Boolean.parseBoolean(parts[2].split(": ")[1]);
-
-                            // 根據 'started' 欄位設定狀態
-                            String status = started ? "存活" : "死亡";
+                            String status = parts[2].split(": ")[1];
 
                             // 建立玩家狀態對象
                             PlayerStatus playerStatus = new PlayerStatus(playerName, status, applesEaten);
@@ -122,37 +123,52 @@ public class Server {
         }
     }
 
-    private static void createGUI() {
+    private static void createGUI(Map<String, PlayerStatus> playersStatus) {
         // 建立一個新的JFrame
         frame = new JFrame("伺服器");
         frame.setSize(300, 500);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-
+    
         // 設定佈局
         frame.setLayout(new BorderLayout());
-
+    
         // 建立一個新的DefaultListModel
         listModel = new DefaultListModel<>();
-
+    
         // 建立一個新的JList並將其新增到JFrame
         playerList = new JList<>(listModel);
         frame.add(new JScrollPane(playerList), BorderLayout.CENTER);
-
+    
         // 建立一個新的按鈕並設定其標籤為 "開始遊戲"
         JButton startGameButton = new JButton("開始遊戲");
         startGameButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                // 在這裡向所有已連接的客戶端傳送開始遊戲的訊號
-                broadcastMessage("START_GAME");
+                // 檢查所有玩家是否都已準備好
+                if (allPlayersReady(playersStatus)) {
+                    // 如果所有玩家都已準備好，向所有已連接的客戶端廣播開始遊戲的消息
+                    broadcastMessage("START_GAME");
+                } else {
+                    // 否則，彈出一個提示框，告知等待所有玩家準備完成
+                    JOptionPane.showMessageDialog(frame, "請等待所有玩家準備完成！");
+                }
             }
         });
-
+    
         // 將按鈕新增到JFrame的底部
         frame.add(startGameButton, BorderLayout.SOUTH);
-
+    
         // 顯示JFrame
         frame.setVisible(true);
+    }
+
+    private static boolean allPlayersReady(Map<String, PlayerStatus> playersStatus) {
+        for (PlayerStatus status : playersStatus.values()) {
+            if (!"READY".equals(status.status)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private static void broadcastMessage(String message) {
@@ -177,6 +193,30 @@ public class Server {
         @Override
         public String toString() {
             return playerName + ":" + status + ":" + applesEaten;
+        }
+    }
+
+    private static void startServeo(int port) {
+        try {
+            ProcessBuilder processBuilder = new ProcessBuilder("ssh", "-R", "80:localhost:" + port, "serveo.net");
+            processBuilder.redirectErrorStream(true);
+
+            Process process = processBuilder.start();
+
+            // Print Serveo output
+            new Thread(() -> {
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        System.out.println(line);
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }).start();
+
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 }

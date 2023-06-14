@@ -29,6 +29,7 @@ import javax.swing.Timer;
 @SuppressWarnings("serial")
 public class GamePanel extends JPanel implements ActionListener, MouseListener {
 
+
     // 遊戲面板相關參數
     static final int EDGE_MARGIN = 20;
     static final int SCREEN_WIDTH = 1200;
@@ -58,7 +59,7 @@ public class GamePanel extends JPanel implements ActionListener, MouseListener {
 
     char direction = 'R';
     boolean running = false;
-    boolean started = false;
+    String status = "WAITING";
     boolean noClick = true;
     Timer timer;
     Random random;
@@ -76,7 +77,7 @@ public class GamePanel extends JPanel implements ActionListener, MouseListener {
      */
     public void sendStatusToServer() {
         if (out != null) {
-            out.println("playerName: " + playerName + ", applesEaten: " + applesEaten + ", started: " + started);
+            out.println("playerName: " + playerName + ", applesEaten: " + applesEaten + ", status: " + status);
         }
     }
 
@@ -91,7 +92,7 @@ public class GamePanel extends JPanel implements ActionListener, MouseListener {
                     System.out.println(messageFromServer);
                     if ("START_GAME".equals(messageFromServer)) {
                         // Server傳來開始遊戲的訊息
-                        started = true;
+                        status = "START";
                         startGame();
                         continue; // 跳過後續處理繼續監聽
                     }
@@ -142,7 +143,7 @@ public class GamePanel extends JPanel implements ActionListener, MouseListener {
      */
     public void startGame() {
         sendStatusToServer();
-        if (started && noClick) {
+        if ((status == "START") && noClick) {
             x[0] = (GAME_AREA_SIZE / 2 / UNIT_SIZE) * UNIT_SIZE + EDGE_MARGIN;
             y[0] = (GAME_AREA_SIZE / 2 / UNIT_SIZE) * UNIT_SIZE + EDGE_MARGIN;
             for (int i = 1; i < bodyParts; i++) {
@@ -342,11 +343,19 @@ public class GamePanel extends JPanel implements ActionListener, MouseListener {
                 g.drawString(pauseText, pauseTextX, pauseTextY);
             }
         } else {
-            if (!started) {
+            if (status == "WAITING") {
                 g.setColor(Color.RED);
                 g.setFont(new Font("SAN_SERIF", Font.BOLD, 30));
                 FontMetrics metrics = getFontMetrics(g.getFont());
-                String startText = "[Click] 開始遊戲";
+                String startText = "請先點擊準備完成等待伺服器開始遊戲";
+                g.drawString(startText, centerX - (metrics.stringWidth(startText) / 2), centerY - 20);
+                String pauseText = "[Space] 暫停遊戲";
+                g.drawString(pauseText, centerX - (metrics.stringWidth(pauseText) / 2), centerY + 30);
+            } else if (status == "READY") {
+                g.setColor(Color.RED);
+                g.setFont(new Font("SAN_SERIF", Font.BOLD, 30));
+                FontMetrics metrics = getFontMetrics(g.getFont());
+                String startText = "準備完成，等待伺服器開始遊戲";
                 g.drawString(startText, centerX - (metrics.stringWidth(startText) / 2), centerY - 20);
                 String pauseText = "[Space] 暫停遊戲";
                 g.drawString(pauseText, centerX - (metrics.stringWidth(pauseText) / 2), centerY + 30);
@@ -408,10 +417,10 @@ public class GamePanel extends JPanel implements ActionListener, MouseListener {
      * 暫停遊戲
      */
     public void pause() {
-        paused = true; // 设置暂停标志
+        paused = true; // 設置暫停標誌
         GamePanel.gameOn = true;
         repaint();
-        // 停止 ScheduledExecutorService 的执行
+        // 停止 ScheduledExecutorService 的執行
         scheduledExecutorService.shutdown();
     }
 
@@ -439,9 +448,9 @@ public class GamePanel extends JPanel implements ActionListener, MouseListener {
     public void mouseClicked(MouseEvent e) {
         int mouseX = e.getX();
         int mouseY = e.getY();
-
         if (mouseX >= READY_BUTTON_X && mouseX <= READY_BUTTON_X + READY_BUTTON_WIDTH && mouseY >= READY_BUTTON_Y && mouseY <= READY_BUTTON_Y + READY_BUTTON_HEIGHT) {
-            // 這邊預留之後可以送使玩家狀態變成準備
+            status = "READY";
+            sendStatusToServer();
         }
     }
 
